@@ -1,0 +1,10 @@
+* text=auto
+*.cmd text eol=crlf
+ks text eol=lf
+mvnw text eol=lf
+*.sh text eol=lf
+*.jar binary
+*.png binary
+*.jpg binary
+# The legacy sources are kept byte for byte as upstream.
+legacy/src/** -text

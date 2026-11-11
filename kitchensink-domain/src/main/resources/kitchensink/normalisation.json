@@ -1,0 +1,41 @@
+{
+  "description": "The accepted differences between the legacy and the new kitchensink, and why. Read by the characterization suite and by the facade's shadow compare. Any difference not listed here is a defect. An entry with a 'match' tells the facade which reads it covers. The facade compares REST reads only: the registration page's HTML differs by design.",
+  "ignore": {
+    "generatedIds": "Ids are allocated by each system's own sequence: compare everything but the id of a member created during a run."
+  },
+  "acceptedDifferences": [
+    {
+      "rule": "R7",
+      "what": "the message of a client-supplied id",
+      "legacy": "detached entity passed to persist: org.jboss.as.quickstarts.kitchensink.model.Member",
+      "new": "A member's id is assigned by the server",
+      "decision": "keep the 400 and the 'error' key; the message is the new system's (assessment R7)"
+    },
+    {
+      "rule": "R12",
+      "what": "two concurrent registrations with one email",
+      "legacy": "400 {\"error\": <database message>}",
+      "new": "409 {\"email\": \"Email taken\"}",
+      "decision": "fixed: the unique index answers as the pre-check does (assessment R12)"
+    },
+    {
+      "rule": "R15",
+      "what": "the registration log line",
+      "legacy": "Registering <name>",
+      "new": "Registered member <id>",
+      "decision": "no personal data in logs (assessment R15)"
+    },
+    {
+      "rule": "R17",
+      "what": "GET /rest/members and the page at volume",
+      "legacy": "500 java.lang.OutOfMemoryError on a large table",
+      "new": "200, the list streamed; the page paged",
+      "decision": "fixed: a failure is not a contract (assessment R17); the facade compares the full list only below a size",
+      "match": {
+        "method": "GET",
+        "path": "^/kitchensink/rest/members$",
+        "legacyStatus": 500
+      }
+    }
+  ]
+}

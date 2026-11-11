@@ -1,0 +1,53 @@
+# kitchensink sync worker. Settings that differ per deployment come from the environment.
+spring:
+  application:
+    name: kitchensink-sync
+  threads:
+    virtual:
+      enabled: true
+  mongodb:
+    uri: ${MONGODB_URI:mongodb://localhost:27017/kitchensink}
+
+kitchensink:
+  sync:
+    legacy:
+      # The worker's own account on the legacy database (replication, reads, and reverse sync writes).
+      jdbc-url: ${LEGACY_JDBC_URL:jdbc:postgresql://localhost:5432/kitchensink}
+      user: ${LEGACY_JDBC_USER:kitchensink_sync}
+      password: ${LEGACY_JDBC_PASSWORD:}
+    forward:
+      # On before the cutover; off after it, when the reverse sync takes over.
+      enabled: ${SYNC_FORWARD_ENABLED:true}
+      slot: ${SYNC_SLOT:kitchensink}
+      publication: ${SYNC_PUBLICATION:kitchensink}
+      # Offsets are stored in MongoDB (sync_offsets), so a restart resumes where it stopped.
+      batch-size: ${SYNC_BATCH_SIZE:2048}
+      heartbeat: 10s
+      # How often a probe is written to measure the end-to-end lag.
+      probe-interval: ${SYNC_PROBE_INTERVAL:5s}
+    reverse:
+      # Off until the cutover starts it (POST /sync/reverse/start). Never runs together with the forward stream.
+      enabled: ${SYNC_REVERSE_ENABLED:false}
+      probe-interval: ${SYNC_PROBE_INTERVAL:5s}
+    reconcile:
+      # Runs every 10 minutes; POST /sync/reconcile runs one on demand.
+      scheduled: ${SYNC_RECONCILE_SCHEDULED:true}
+      interval: ${SYNC_RECONCILE_INTERVAL:10m}
+      settle: ${SYNC_RECONCILE_SETTLE:5s}
+      recheck-max: 10000
+      samples: 20
+
+server:
+  port: ${PORT:8081}
+  shutdown: graceful
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health, info, metrics, prometheus
+
+logging:
+  level:
+    # Debezium logs every signal it handles; the worker's probe and drain signals are too frequent for that.
+    io.debezium.pipeline.signal.actions.Log: WARN

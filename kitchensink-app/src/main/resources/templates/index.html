@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<!-- The registration page, rebuilt from the legacy's index.xhtml: same form, messages and table. -->
+<html xmlns:th="http://www.thymeleaf.org" th:lang="${#locale.language}">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>kitchensink</title>
+    <link rel="stylesheet" th:href="@{/css/screen.css}">
+</head>
+<body>
+<main class="page">
+    <header>
+        <h1 th:text="#{memberWelcomeHeader}">Welcome to kitchensink!</h1>
+        <p th:text="#{memberWelcomeMessage}">You have successfully deployed a localized web application.</p>
+    </header>
+
+    <section class="card" aria-labelledby="registration">
+        <h2 id="registration" th:text="#{memberRegistrationHeader}">Member Registration</h2>
+        <p class="hint" th:text="#{memberFormDescription}">Enforces annotation-based constraints.</p>
+
+        <form id="reg" method="post" th:object="${newMember}" novalidate>
+            <div class="field">
+                <label for="name" th:text="#{memberNameLabel}">Name:</label>
+                <input id="name" type="text" th:field="*{name}" autocomplete="name"
+                       th:attr="aria-invalid=${#fields.hasErrors('name')}">
+                <span class="invalid" th:if="${#fields.hasErrors('name')}" th:errors="*{name}"></span>
+            </div>
+            <div class="field">
+                <label for="email" th:text="#{memberEmailLabel}">Email:</label>
+                <input id="email" type="email" th:field="*{email}" autocomplete="email"
+                       th:attr="aria-invalid=${#fields.hasErrors('email')}">
+                <span class="invalid" th:if="${#fields.hasErrors('email')}" th:errors="*{email}"></span>
+            </div>
+            <div class="field">
+                <label for="phoneNumber" th:text="#{memberPhoneLabel}">Phone #:</label>
+                <input id="phoneNumber" type="tel" th:field="*{phoneNumber}" autocomplete="tel"
+                       th:attr="aria-invalid=${#fields.hasErrors('phoneNumber')}">
+                <span class="invalid" th:if="${#fields.hasErrors('phoneNumber')}" th:errors="*{phoneNumber}"></span>
+            </div>
+            <div class="actions">
+                <button id="register" type="submit" class="register" th:text="#{memberRegisterButtonLabel}">Register</button>
+                <p class="messages valid" role="status" th:if="${registered}" th:text="#{registeredMessage}">Registered!</p>
+                <p class="messages invalid" role="alert" th:if="${failure}"
+                   th:text="#{registerFailMessage} + ' ' + #{${failure}}">Registration failed: Email taken</p>
+                <p class="messages invalid" role="alert" th:if="${failureText}"
+                   th:text="#{registerFailMessage} + ' ' + ${failureText}">Registration failed:</p>
+            </div>
+        </form>
+    </section>
+
+    <section class="card" aria-labelledby="members-heading">
+        <h2 id="members-heading" th:text="#{membersHeader}">Members</h2>
+        <p th:if="${total == 0}"><em th:text="#{noMembers}">No registered members.</em></p>
+        <div class="table" th:if="${total > 0}">
+            <table class="simpletablestyle">
+                <thead>
+                <tr>
+                    <th scope="col" th:text="#{memberIdHeader}">ID</th>
+                    <th scope="col" th:text="#{memberNameHeader}">Name</th>
+                    <th scope="col" th:text="#{memberEmailHeader}">Email</th>
+                    <th scope="col" th:text="#{memberPhoneHeader}">Phone #</th>
+                    <th scope="col" th:text="#{memberRestUrl}">REST URL</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:each="member : ${members}">
+                    <td th:text="${member.id}">0</td>
+                    <td th:text="${member.name}">John Smith</td>
+                    <td th:text="${member.email}">john.smith@mailinator.com</td>
+                    <td th:text="${member.phoneNumber}">2125551212</td>
+                    <td><a th:href="${base + '/rest/members/' + member.id}"
+                           th:text="${'/rest/members/' + member.id}">/rest/members/0</a></td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+        <nav class="pager" th:if="${total > 0}" aria-label="pages">
+            <a th:if="${page > 0}" th:href="${base + '/?page=' + (page - 1)}" th:text="#{previous}">Previous</a>
+            <span th:text="#{pageOf(${page + 1}, ${pages}, ${total})}">Page 1 of 1, 1 members</span>
+            <a th:if="${page + 1 < pages}" th:href="${base + '/?page=' + (page + 1)}" th:text="#{next}">Next</a>
+        </nav>
+        <p class="footer-link">
+            <span th:text="#{memberRestUrlAllLabel}">REST URL for all members:</span>
+            <a th:href="${base + '/rest/members'}">/rest/members</a>
+        </p>
+    </section>
+</main>
+</body>
+</html>

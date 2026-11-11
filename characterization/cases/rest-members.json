@@ -1,0 +1,65 @@
+{
+  "description": "The legacy's /rest/members, rule by rule (R1 to R18): each case is one or more requests and what the legacy answered. {{run}} is unique per run, so registered emails never collide. 'body' is the exact text, 'json' must match on every key it gives, 'keys' is the exact key set.",
+  "cases": [
+    { "id": "r18-member-0", "rule": "R18", "title": "A member reads with its fields in alphabetical order",
+      "steps": [ { "request": { "method": "GET", "path": "/rest/members/0" },
+                   "expect": { "status": 200, "body": "{\"email\":\"john.smith@mailinator.com\",\"id\":0,\"name\":\"John Smith\",\"phoneNumber\":\"2125551212\"}" } } ] },
+
+    { "id": "r13-unknown-id", "rule": "R13", "title": "An unknown id is 404",
+      "steps": [ { "request": { "method": "GET", "path": "/rest/members/987654321098" }, "expect": { "status": 404, "body": "" } } ] },
+
+    { "id": "r13-non-numeric-id", "rule": "R13", "title": "A non-numeric id matches no route: 404",
+      "steps": [ { "request": { "method": "GET", "path": "/rest/members/abc" }, "expect": { "status": 404, "body": "" } } ] },
+
+    { "id": "r9-r11-register-then-taken", "rule": "R9 R11", "title": "A registration is 200 with an empty body; the same email again is 409 Email taken",
+      "steps": [
+        { "request": { "method": "POST", "path": "/rest/members", "json": { "name": "Jane Doe", "email": "jane.{{run}}@mailinator.com", "phoneNumber": "2125551234" } },
+          "expect": { "status": 200, "body": "" } },
+        { "request": { "method": "POST", "path": "/rest/members", "json": { "name": "Jane Doe", "email": "jane.{{run}}@mailinator.com", "phoneNumber": "2125551234" } },
+          "expect": { "status": 409, "json": { "email": "Email taken" }, "keys": ["email"] } } ] },
+
+    { "id": "r4-email-case-sensitive", "rule": "R4", "title": "Emails are unique case-sensitively: the same email in capitals is another member",
+      "steps": [
+        { "request": { "method": "POST", "path": "/rest/members", "json": { "name": "Case One", "email": "case.{{run}}@mailinator.com", "phoneNumber": "2125551234" } }, "expect": { "status": 200 } },
+        { "request": { "method": "POST", "path": "/rest/members", "json": { "name": "Case Two", "email": "CASE.{{run}}@mailinator.com", "phoneNumber": "2125551234" } }, "expect": { "status": 200 } } ] },
+
+    { "id": "r10-all-invalid", "rule": "R10", "title": "Every property invalid: 400 with one message per property, in the server's language even when the client asks for French",
+      "steps": [ { "request": { "method": "POST", "path": "/rest/members", "headers": { "Accept-Language": "fr" }, "json": { "name": "J4ne", "email": "jane", "phoneNumber": "12" } },
+                   "expect": { "status": 400, "keys": ["name", "email", "phoneNumber"],
+                               "json": { "name": "must contain only letters and spaces", "email": "must be a well-formed email address", "phoneNumber": "size must be between 10 and 12" } } } ] },
+
+    { "id": "r1-name-1", "rule": "R1", "title": "A name of 1 character is valid",
+      "steps": [ { "request": { "method": "POST", "path": "/rest/members", "json": { "name": "J", "email": "r1a.{{run}}@mailinator.com", "phoneNumber": "2125551234" } }, "expect": { "status": 200 } } ] },
+    { "id": "r1-name-25", "rule": "R1", "title": "A name of 25 characters is valid",
+      "steps": [ { "request": { "method": "POST", "path": "/rest/members", "json": { "name": "Abcdefghijklmnopqrstuvwxy", "email": "r1b.{{run}}@mailinator.com", "phoneNumber": "2125551234" } }, "expect": { "status": 200 } } ] },
+    { "id": "r1-name-26", "rule": "R1", "title": "A name of 26 characters is refused",
+      "steps": [ { "request": { "method": "POST", "path": "/rest/members", "json": { "name": "Abcdefghijklmnopqrstuvwxyz", "email": "r1c.{{run}}@mailinator.com", "phoneNumber": "2125551234" } },
+                   "expect": { "status": 400, "json": { "name": "size must be between 1 and 25" } } } ] },
+    { "id": "r1-name-empty", "rule": "R1", "title": "An empty name is refused",
+      "steps": [ { "request": { "method": "POST", "path": "/rest/members", "json": { "name": "", "email": "r1d.{{run}}@mailinator.com", "phoneNumber": "2125551234" } },
+                   "expect": { "status": 400, "json": { "name": "size must be between 1 and 25" } } } ] },
+
+    { "id": "r2-punctuation", "rule": "R2", "title": "Punctuation passes, whatever the message says",
+      "steps": [ { "request": { "method": "POST", "path": "/rest/members", "json": { "name": "O'Brien-Smith, Jr.", "email": "r2.{{run}}@mailinator.com", "phoneNumber": "2125551234" } }, "expect": { "status": 200 } } ] },
+
+    { "id": "r3-dotless-domain", "rule": "R3", "title": "a@b is a valid email for Hibernate Validator",
+      "steps": [ { "request": { "method": "POST", "path": "/rest/members", "json": { "name": "Dotless", "email": "r3.{{run}}@b", "phoneNumber": "2125551234" } }, "expect": { "status": 200 } } ] },
+    { "id": "r3-empty-email", "rule": "R3", "title": "An empty email is refused",
+      "steps": [ { "request": { "method": "POST", "path": "/rest/members", "json": { "name": "No Email", "email": "", "phoneNumber": "2125551234" } },
+                   "expect": { "status": 400, "json": { "email": "must not be empty" } } } ] },
+    { "id": "r3-missing-email", "rule": "R3", "title": "A missing email is refused",
+      "steps": [ { "request": { "method": "POST", "path": "/rest/members", "json": { "name": "No Email", "phoneNumber": "2125551234" } },
+                   "expect": { "status": 400, "keys": ["email"] } } ] },
+
+    { "id": "r5-phone-10", "rule": "R5", "title": "10 digits pass", "steps": [ { "request": { "method": "POST", "path": "/rest/members", "json": { "name": "Ten", "email": "r5a.{{run}}@mailinator.com", "phoneNumber": "2125551234" } }, "expect": { "status": 200 } } ] },
+    { "id": "r5-phone-12", "rule": "R5", "title": "12 digits pass", "steps": [ { "request": { "method": "POST", "path": "/rest/members", "json": { "name": "Twelve", "email": "r5b.{{run}}@mailinator.com", "phoneNumber": "212555123456" } }, "expect": { "status": 200 } } ] },
+    { "id": "r5-phone-plus", "rule": "R5", "title": "A leading + passes: @Digits parses a BigDecimal", "steps": [ { "request": { "method": "POST", "path": "/rest/members", "json": { "name": "Plus", "email": "r5c.{{run}}@mailinator.com", "phoneNumber": "+33612345678" } }, "expect": { "status": 200 } } ] },
+    { "id": "r5-phone-9", "rule": "R5", "title": "9 digits are refused", "steps": [ { "request": { "method": "POST", "path": "/rest/members", "json": { "name": "Nine", "email": "r5d.{{run}}@mailinator.com", "phoneNumber": "212555123" } }, "expect": { "status": 400, "json": { "phoneNumber": "size must be between 10 and 12" } } } ] },
+    { "id": "r5-phone-13", "rule": "R5", "title": "13 digits are refused", "steps": [ { "request": { "method": "POST", "path": "/rest/members", "json": { "name": "Thirteen", "email": "r5e.{{run}}@mailinator.com", "phoneNumber": "2125551234567" } }, "expect": { "status": 400, "keys": ["phoneNumber"] } } ] },
+    { "id": "r5-phone-dashes", "rule": "R5", "title": "Dashes are refused", "steps": [ { "request": { "method": "POST", "path": "/rest/members", "json": { "name": "Dashes", "email": "r5f.{{run}}@mailinator.com", "phoneNumber": "212-555-1234" } }, "expect": { "status": 400, "json": { "phoneNumber": "numeric value out of bounds (<12 digits>.<0 digits> expected)" } } } ] },
+
+    { "id": "r7-client-id", "rule": "R7", "title": "A client-supplied id is refused with 400 error",
+      "steps": [ { "request": { "method": "POST", "path": "/rest/members", "json": { "id": 5, "name": "With Id", "email": "r7.{{run}}@mailinator.com", "phoneNumber": "2125551234" } },
+                   "expect": { "status": 400, "keys": ["error"] } } ] }
+  ]
+}

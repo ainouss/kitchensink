@@ -1,0 +1,127 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-parent</artifactId>
+        <version>4.1.2</version>
+        <relativePath/>
+    </parent>
+
+    <groupId>io.github.ainouss.kitchensink</groupId>
+    <artifactId>kitchensink-parent</artifactId>
+    <version>1.0.0-SNAPSHOT</version>
+    <packaging>pom</packaging>
+    <name>kitchensink (parent)</name>
+    <description>The JBoss EAP kitchensink quickstart modernized to Java 21 and Spring Boot on MongoDB, with its data
+        migration and cutover from the legacy relational database.</description>
+    <url>https://github.com/ainouss/kitchensink</url>
+
+    <licenses>
+        <license>
+            <name>Apache License, Version 2.0</name>
+            <url>https://www.apache.org/licenses/LICENSE-2.0</url>
+        </license>
+    </licenses>
+
+    <modules>
+        <module>kitchensink-domain</module>
+        <module>local</module>
+        <module>kitchensink-app</module>
+        <module>kitchensink-sync</module>
+        <module>kitchensink-facade</module>
+        <module>characterization</module>
+        <module>legacy</module>
+    </modules>
+
+    <properties>
+        <java.version>21</java.version>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <!-- Versions Spring Boot does not manage. Debezium's BOM is not imported: it would override Spring Boot's
+             MongoDB driver. -->
+        <debezium.version>3.7.1.Final</debezium.version>
+        <archunit.version>1.5.1</archunit.version>
+        <jqwik.version>1.10.2</jqwik.version>
+        <springdoc.version>3.2.0</springdoc.version>
+        <!-- The local databases: PostgreSQL 17 and MongoDB 8.0, run from downloaded binaries (no Docker). -->
+        <embedded-postgres.version>2.2.2</embedded-postgres.version>
+        <postgresql-binaries.version>17.11.0</postgresql-binaries.version>
+        <flapdoodle.version>5.0.0</flapdoodle.version>
+    </properties>
+
+    <dependencyManagement>
+        <dependencies>
+            <!-- PostgreSQL binaries for the local databases, in every module that uses them -->
+            <dependency>
+                <groupId>io.zonky.test.postgres</groupId>
+                <artifactId>embedded-postgres-binaries-bom</artifactId>
+                <version>${postgresql-binaries.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+            <dependency>
+                <groupId>io.github.ainouss.kitchensink</groupId>
+                <artifactId>kitchensink-domain</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <!-- The local databases, for the tests -->
+            <dependency>
+                <groupId>io.github.ainouss.kitchensink</groupId>
+                <artifactId>kitchensink-local</artifactId>
+                <version>${project.version}</version>
+                <exclusions>
+                    <exclusion>
+                        <groupId>org.slf4j</groupId>
+                        <artifactId>slf4j-simple</artifactId>
+                    </exclusion>
+                </exclusions>
+            </dependency>
+            <dependency>
+                <groupId>com.tngtech.archunit</groupId>
+                <artifactId>archunit-junit5</artifactId>
+                <version>${archunit.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>net.jqwik</groupId>
+                <artifactId>jqwik</artifactId>
+                <version>${jqwik.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.springdoc</groupId>
+                <artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
+                <version>${springdoc.version}</version>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
+
+    <build>
+        <!-- target/<module>.jar, and target/<module>-exec.jar for the runnable ones -->
+        <finalName>${project.artifactId}</finalName>
+        <plugins>
+            <!-- Stops at once, with a clear message, when Maven runs on a JDK older than 21 -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-enforcer-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>require-jdk-21</id>
+                        <goals>
+                            <goal>enforce</goal>
+                        </goals>
+                        <configuration>
+                            <rules>
+                                <requireJavaVersion>
+                                    <version>[21,)</version>
+                                    <message>This build needs JDK 21 or newer, and Maven runs on Java ${java.version} (${java.home}). Point JAVA_HOME to a JDK 21, then check with: mvn -v</message>
+                                </requireJavaVersion>
+                            </rules>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
+</project>

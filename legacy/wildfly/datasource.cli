@@ -1,0 +1,3 @@
+# The legacy's datasource on PostgreSQL, under the JNDI name its persistence.xml uses.
+# The ${env...} values are read when the server starts.
+/subsystem=datasources/data-source=KitchensinkQuickstartDS:add(jndi-name=java:jboss/datasources/KitchensinkQuickstartDS, driver-name=postgresql, connection-url="${env.LEGACY_DB_URL:jdbc:postgresql://localhost:5432/kitchensink}", user-name="${env.LEGACY_DB_USER:kitchensink}", password="${env.LEGACY_DB_PASSWORD:kitchensink}", min-pool-size=2, max-pool-size=20, validate-on-match=true, background-validation=false, valid-connection-checker-class-name=org.jboss.jca.adapters.jdbc.extensions.postgres.PostgreSQLValidConnectionChecker, exception-sorter-class-name=org.jboss.jca.adapters.jdbc.extensions.postgres.PostgreSQLExceptionSorter)

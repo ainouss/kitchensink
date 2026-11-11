@@ -1,0 +1,50 @@
+# kitchensink application. Settings that change per deployment come from environment variables.
+spring:
+  application:
+    name: kitchensink
+  threads:
+    virtual:
+      enabled: true
+  messages:
+    # Page texts (R16). Falls back to English, not the server's language.
+    basename: messages
+    fallback-to-system-locale: false
+  mongodb:
+    uri: ${MONGODB_URI:mongodb://localhost:27017/kitchensink}
+
+kitchensink:
+  # Inserts the legacy's member 0 into an empty database. Turn off for a migration, which brings member 0 itself.
+  seed: ${KITCHENSINK_SEED:true}
+
+server:
+  port: ${PORT:8080}
+  shutdown: graceful
+  servlet:
+    session:
+      # The session only carries the "Registered!" message. Cookie only, so the session id never appears in a URL.
+      tracking-modes: cookie
+      cookie:
+        # Not JSESSIONID: the legacy's WildFly uses that name, and behind the facade both apps share one host.
+        # Cookies ignore ports, so with the same name the browser sends both, and the legacy picks this one,
+        # finds no session, and refuses its form with a 500 (ViewExpiredException).
+        name: KITCHENSINK_SESSION
+        http-only: true
+        same-site: lax
+
+springdoc:
+  # Document the versioned API only, not the legacy /rest/members.
+  paths-to-match: /api/**
+  api-docs:
+    path: /v3/api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health, info, metrics, prometheus
+  endpoint:
+    health:
+      probes:
+        enabled: true

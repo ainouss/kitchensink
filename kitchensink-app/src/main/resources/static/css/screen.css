@@ -1,0 +1,53 @@
+/* The registration page: the legacy layout, rewritten simply, without the JBoss branding. */
+:root {
+    --ink: #1f2933;
+    --muted: #52606d;
+    --line: #d9e2ec;
+    --paper: #ffffff;
+    --ground: #f5f7fa;
+    --accent: #1f6feb;
+    --ok: #12705a;
+    --error: #b42318;
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    color: var(--ink);
+    background: var(--ground);
+}
+
+body { margin: 0; }
+.page { max-width: 64rem; margin: 0 auto; padding: 2rem 1.25rem 3rem; }
+header h1 { margin: 0 0 .25rem; font-size: 1.75rem; }
+header p { margin: 0 0 1.5rem; color: var(--muted); }
+
+.card { background: var(--paper); border: 1px solid var(--line); border-radius: .5rem; padding: 1.25rem 1.5rem;
+    margin-bottom: 1.5rem; }
+.card h2 { margin: 0 0 .5rem; font-size: 1.25rem; }
+.hint { margin: 0 0 1rem; color: var(--muted); font-size: .9rem; }
+
+.field { display: grid; grid-template-columns: 8rem minmax(0, 20rem) 1fr; gap: .75rem; align-items: center;
+    margin-bottom: .75rem; }
+.field label { font-weight: 600; }
+.field input { font: inherit; padding: .45rem .6rem; border: 1px solid var(--line); border-radius: .375rem; }
+.field input:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
+.field input[aria-invalid="true"] { border-color: var(--error); }
+
+.actions { display: flex; align-items: center; gap: 1rem; margin-top: 1rem; }
+.register { font: inherit; font-weight: 600; color: #fff; background: var(--accent); border: 0; border-radius: .375rem;
+    padding: .5rem 1.25rem; cursor: pointer; }
+.register:hover { filter: brightness(1.1); }
+.messages { margin: 0; }
+.valid { color: var(--ok); }
+.invalid { color: var(--error); font-size: .9rem; }
+
+.table { overflow-x: auto; }
+.simpletablestyle { width: 100%; border-collapse: collapse; font-size: .95rem; }
+.simpletablestyle th, .simpletablestyle td { text-align: left; padding: .5rem .6rem; border-bottom: 1px solid var(--line); }
+.simpletablestyle th { color: var(--muted); font-weight: 600; }
+.simpletablestyle tbody tr:hover { background: var(--ground); }
+a { color: var(--accent); }
+
+.pager { display: flex; gap: 1rem; align-items: center; margin-top: 1rem; color: var(--muted); }
+.footer-link { margin: 1rem 0 0; color: var(--muted); }
+
+@media (max-width: 40rem) {
+    .field { grid-template-columns: 1fr; }
+}

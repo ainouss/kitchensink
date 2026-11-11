@@ -1,0 +1,108 @@
+# Build, test, and run the whole migration on Windows and Linux, with only a JDK (no Docker).
+name: CI
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        # Not ubuntu-latest: MongoDB 8.0 refuses to start on Linux kernels 6.19 and newer (SERVER-121912).
+        os: [windows-latest, ubuntu-22.04]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+          cache: maven
+
+      - name: Build and test (Windows, as in the README)
+        if: runner.os == 'Windows'
+        shell: cmd
+        run: mvnw.cmd -B -ntp verify
+
+      - name: Build and test
+        if: runner.os != 'Windows'
+        run: ./mvnw -B -ntp verify
+
+      - name: Start everything, then dual-run, rehearsal, cutover and rollback
+        shell: bash
+        run: |
+          ks() { java -jar local/target/kitchensink-local-exec.jar "$@"; }
+          ks start > ks-start.log 2>&1 &
+          for i in $(seq 1 120); do
+            grep -q "Press Ctrl+C" ks-start.log && break
+            grep -q "stopped\|Exception\|not built\|in use" ks-start.log && break
+            sleep 5
+          done
+          cat ks-start.log
+          grep -q "Press Ctrl+C" ks-start.log
+          ks rules legacy
+          ks dual-run --seconds 5 | tee ks-not-synced.log || true
+          grep -q "run ks sync first" ks-not-synced.log
+          ks sync
+          if [ "$RUNNER_OS" = "Windows" ]; then cmd //c ks.cmd status; else ./ks status; fi
+          ks dual-run --seconds 15
+          ks rehearse
+          ks cutover --yes --watch 10
+          ks rules
+          ks rules new
+          ks rollback --yes
+          ks reconcile
+
+      - name: A window closed while running, then ks reset, ks start and ks stop
+        shell: bash
+        run: |
+          ks() { java -jar local/target/kitchensink-local-exec.jar "$@"; }
+          # As when a window is closed: ks dies at once, what it started keeps running and locks the data.
+          close_window() {
+            ks_pid=$(awk '$1=="ks" {print $2}' .local/pids)
+            if [ "$RUNNER_OS" = "Windows" ]; then taskkill //F //PID "$ks_pid"; else kill -9 "$ks_pid"; fi
+          }
+          wait_for_start() {
+            for i in $(seq 1 120); do
+              grep -q "Press Ctrl+C" "$1" && break
+              grep -q "stopped\|Exception\|in use\|Cannot" "$1" && break
+              sleep 5
+            done
+            cat "$1"
+            grep -q "Press Ctrl+C" "$1"
+          }
+          close_window
+          ks reset | tee ks-reset.log
+          grep -q "Stopped what an earlier run left running" ks-reset.log
+          grep -q "Data deleted" ks-reset.log
+          ks start > ks-restart.log 2>&1 &
+          wait_for_start ks-restart.log
+          ks start | tee ks-second.log || true
+          grep -q "is running" ks-second.log
+          ks reset | tee ks-reset-refused.log || true
+          grep -q "is running" ks-reset-refused.log
+          close_window
+          ks start > ks-restart2.log 2>&1 &
+          wait_for_start ks-restart2.log
+          grep -q "Stopped what an earlier run left running" ks-restart2.log
+          ks stop
+          ks stop | grep -q "Nothing to stop"
+
+      - name: Logs
+        if: always()
+        shell: bash
+        run: |
+          cat ks-start.log ks-restart.log ks-restart2.log || true
+          for f in .local/logs/*.log; do echo "--- $f"; tail -n 60 "$f"; done || true

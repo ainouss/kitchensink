@@ -1,0 +1,35 @@
+# kitchensink routing facade. Deployment settings come from environment variables.
+spring:
+  application:
+    name: kitchensink-facade
+  threads:
+    virtual:
+      enabled: true
+  mongodb:
+    uri: ${MONGODB_URI:mongodb://localhost:27017/kitchensink}
+
+kitchensink:
+  facade:
+    # The two sides. Both serve /kitchensink/...; the facade forwards the path unchanged.
+    legacy-url: ${LEGACY_URL:http://localhost:8180}
+    new-url: ${NEW_URL:http://localhost:8080}
+    # PUT /facade/control needs "Authorization: Bearer <token>"; without a token, the control is read only.
+    admin-token: ${FACADE_ADMIN_TOKEN:}
+    control-refresh: 1s
+    upstream-timeout: 30s
+    shadow:
+      timeout: 10s
+      # Larger responses are passed through without a comparison.
+      max-body: 1MB
+      # How many mismatches are stored; after that they are only counted.
+      max-stored: 10000
+
+server:
+  port: ${PORT:8000}
+  shutdown: graceful
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health, info, metrics, prometheus
